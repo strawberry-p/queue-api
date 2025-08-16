@@ -29,14 +29,19 @@ def queue_write(content):
     queueLen += 1
 
 def queue_pop(pos):
+    global queueLen
     c = database.cursor()
-    c.execute(f"select * from queue where ID = {pos}")
-    res = str(c.fetchone()[1])
-    c.execute(f"delete * from queue where ID = {pos}")
-    for i in range(queueLen-pos):
-        c.execute(f"update queue set ID = {pos+i} where ID = {pos+i+1}")
-        #shift all entries above pos down by 1
-    queueLen -= 1
+    if queueLen > 0:
+        c.execute(f"select * from queue where ID = {pos}")
+        res = str(c.fetchone()[1])
+        c.execute(f"delete from queue where ID = {pos}")
+        for i in range(queueLen-pos):
+            c.execute(f"update queue set ID = {pos+i} where ID = {pos+i+1}")
+            #shift all entries above pos down by 1
+        queueLen -= 1
+    else:
+        res = ""
+        print(f"empty return for pos {pos}")
     database.commit()
     c.close()
     return res
