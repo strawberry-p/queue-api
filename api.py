@@ -69,15 +69,15 @@ def length_update(name="queue"):
     c = database.cursor()
     c.execute(f"select * from {name}")
     res = len(c.fetchall())
-    c.execute(f"update queue_manager set len = {res} where name = {name}")
+    c.execute(f"update queue_manager set len = {res} where name = '{name}'")
     database.commit()
     c.close()
     return res
 
 def length_get(name="queue"):
     c = database.cursor()
-    c.execute(f"select * from queue_manager where name = {name}")
-    res = c.fetchone()[3]
+    c.execute(f"select * from queue_manager where name = '{name}'")
+    res = c.fetchone()[2]
     database.commit() #idk if i need to do this for read-only queries, but better safe than sorry?
     c.close()
     return res
