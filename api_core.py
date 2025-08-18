@@ -84,6 +84,7 @@ def length_get(name="queue"):
     database.commit() #idk if i need to do this for read-only queries, but better safe than sorry?
     c.close()
     return res
+
 def queue_write(content,name="queue"):
     global queueLen
     c = database.cursor()
@@ -146,3 +147,10 @@ def queue_delete(name, deletePwd):
         return err
     else:
         return "protected_name"
+def q_info(name):
+    c = database.cursor()
+    c.execute(f"select * from queue_manager where name = '{name}'")
+    res = c.fetchmany(1)[0]
+    database.commit()
+    c.close()
+    return res
