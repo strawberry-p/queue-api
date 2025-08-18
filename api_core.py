@@ -1,8 +1,6 @@
-from fastapi import FastAPI
 import sqlite3 as sq3
 import time
 import random, string
-#app = FastAPI()
 database = sq3.connect("queue.db")
 PROTECTED_NAMES = ("queue", "info_queue", "info_event", "queue_manager")
 def queue_create_new(name="queue"):
@@ -44,16 +42,19 @@ managerLen = len(c.fetchall())
 if managerLen == 0:
     c.execute(f"{MNG_INSERT} (0, 0, 'queue', '', '', '', {round(time.time())})")
     managerLen += 1
+
 c.execute(queue_create_new("info_queue"))
 c.execute("select * from queue_manager where name = 'info_queue'")
 if len(c.fetchall()) == 0:
     c.execute(f"{MNG_INSERT} ({managerLen}, 0, 'info_queue', '', '', '', {round(time.time())})")
     managerLen += 1
+
 c.execute(queue_create_new("info_events"))
 c.execute("select * from queue_manager where name = 'info_events'")
 if len(c.fetchmany(1)) == 0:
     c.execute(f"{MNG_INSERT} ({managerLen}, 0, 'info_events', '', '', '', {round(time.time())})")
     managerLen += 1
+
 c.execute("select * from queue_manager")
 print(c.fetchall())
 database.commit()
@@ -66,6 +67,7 @@ print(c.fetchall())
 c.execute(f"update queue_manager set len = {queueLen} where name = 'queue'")
 database.commit()
 c.close()
+
 def length_update(name="queue"):
     c = database.cursor()
     c.execute(f"select * from {name}")
