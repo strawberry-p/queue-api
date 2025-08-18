@@ -1,8 +1,10 @@
 from fastapi import FastAPI
 import sqlite3 as sq3
 import time
+import random, string
 #app = FastAPI()
 database = sq3.connect("queue.db")
+PROTECTED_NAMES = ("queue", "info_queue", "info_event", "queue_manager")
 def queue_create_new(name="queue"):
     return(f'''
     create table if not exists {name} (
@@ -56,7 +58,6 @@ c.execute("select * from queue_manager")
 print(c.fetchall())
 database.commit()
 c.close()
-#ts pmo fr
 
 c = database.cursor()
 c.execute("select * from queue")
@@ -108,3 +109,38 @@ def queue_pop(pos, name="queue"):
     database.commit()
     c.close()
     return res
+
+def queue_new(name,writePwd="", readPwd=""):
+    global managerLen
+    err = ""
+    deletePwd = ''.join(random.choices(string.ascii_letters + string.digits,k=16))
+    c = database.cursor()
+    c.execute(f"select * from queue_manager where name = '{name}'")
+    if (len(c.fetchmany(1)) == 0) and name != "queue_manager":
+        insertTuple = (managerLen,0,name,deletePwd,writePwd,readPwd,round(time.time()))
+        print(insertTuple)
+        c.execute(f"{MNG_INSERT} {insertTuple}")
+        c.execute(queue_create_new(name))
+        database.commit()
+        managerLen += 1
+    else:
+        err = "invalid_name"
+    c.close()
+    return((deletePwd,err))
+
+def queue_delete(name, deletePwd):
+    err = ""
+    if not name in PROTECTED_NAMES:
+        c = database.cursor()
+        c.execute(f"select * from queue_manager where name = '{name}'")
+        targetDb = c.fetchmany(1)[0]
+        if targetDb[3] == deletePwd:
+            c.execute(f"delete from queue_manager where name = '{name}' and delete_secret = '{deletePwd}'")
+            c.execute(f"drop table {name}")
+        else:
+            err = "incorrect_secret"
+        database.commit()
+        c.close()
+        return err
+    else:
+        return "protected_name"
