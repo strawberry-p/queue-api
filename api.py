@@ -42,14 +42,14 @@ managerLen = len(c.fetchall())
 if managerLen == 0:
     c.execute(f"{MNG_INSERT} (0, 0, 'queue', '', '', '', {round(time.time())})")
     managerLen += 1
+c.execute(queue_create_new("info_queue"))
 c.execute("select * from queue_manager where name = 'info_queue'")
 if len(c.fetchall()) == 0:
-    c.execute(queue_create_new("info_queue"))
     c.execute(f"{MNG_INSERT} ({managerLen}, 0, 'info_queue', '', '', '', {round(time.time())})")
     managerLen += 1
+c.execute(queue_create_new("info_events"))
 c.execute("select * from queue_manager where name = 'info_events'")
 if len(c.fetchmany(1)) == 0:
-    c.execute(queue_create_new("info_events"))
     c.execute(f"{MNG_INSERT} ({managerLen}, 0, 'info_events', '', '', '', {round(time.time())})")
     managerLen += 1
 c.execute("select * from queue_manager")
@@ -77,7 +77,7 @@ def length_update(name="queue"):
 def length_get(name="queue"):
     c = database.cursor()
     c.execute(f"select * from queue_manager where name = '{name}'")
-    res = c.fetchone()[2]
+    res = c.fetchone()[1]
     database.commit() #idk if i need to do this for read-only queries, but better safe than sorry?
     c.close()
     return res
