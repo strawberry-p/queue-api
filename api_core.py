@@ -132,6 +132,8 @@ def queue_new(name,writePwd="", readPwd=""):
         else:
             err = "invalid_name"
         c.close()
+    if err == "":
+        queue_write(name,"info_queue")
     return((deletePwd,err))
 
 def queue_delete(name, deletePwd):
