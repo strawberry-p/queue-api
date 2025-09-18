@@ -17,11 +17,14 @@ def dir_pop(name: str,key: str, s_q: bool):
         raise HTTPException(404)
     if key == info[5] or name == "queue":
         if s_q:
-            res = a.queue_pop(info[1]-1,name) #info[1] is length
+            ret = a.queue_pop(info[1]-1,name) #info[1] is length
             #equivalent to the last item in stack, LIFO
         else:
-            res = a.queue_pop(0,name)
-        return {"content": res}
+            ret = a.queue_pop(0,name)
+        if ret[1] == "":
+            return {"content": ret[0]}
+        else:
+            raise HTTPException(400,detail=ret[1])
     else:
         raise HTTPException(403)
 
@@ -32,7 +35,10 @@ def wq_write(name: str, key: Write):
     except IndexError: #q_info raises an IndexError if the fetchmany returns an empty array (no result)
         raise HTTPException(404)
     if (key.key == info[4] or name == "queue") and (name not in WRITE_PROTECT):
-        a.queue_write(key.content, name)
+        if a.san_bool(name):
+            a.queue_write(key.content, name)
+        else:
+            raise HTTPException(400,detail="sanitise_name")
     else:
         raise HTTPException(403)
 
