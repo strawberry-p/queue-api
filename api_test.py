@@ -11,9 +11,18 @@ def g(name="queue",key="",stack=False):
         res = r.get(f"{ADDR}/pop/{name}",json={"key":key})
     jres = res.json()
     return jres
+def length(name="queue"):
+    res = r.get(f"{ADDR}/length/{name}")
+    jres = res.json()
+    return jres
 def new_queue(name,wk="",rk=""):
     res = r.put(f"{ADDR}/manage/{name}",json={"write_secret":wk,"read_secret":rk})
     print(res)
     return res.json()
 def delete_queue(name, dk):
     res = r.delete(f"{ADDR}/manage/{name}",json={"key":dk})
+def update_key(name,dk,newkey,writeOrRead="write"):
+    res = r.post(f"{ADDR}/change_{writeOrRead}_key/{name}",json={"key":dk,"target_content":newkey})
+    print(res.status_code)
+    print(res.content)
+    return res.json()

@@ -22,14 +22,14 @@ def dir_pop(name: str,key: str, s_q: bool):
         else:
             ret = a.queue_pop(0,name)
         if ret[1] == "":
-            return {"content": ret[0]}
+            return ret[0]
         else:
             raise HTTPException(400,detail=ret[1])
     else:
         raise HTTPException(403)
 
 @app.post("/api/write/{name}", status_code=201) #Created
-def wq_write(name: str, key: Write):
+def write(name: str, key: Write):
     try:
         info = a.q_info(name)
     except IndexError: #q_info raises an IndexError if the fetchmany returns an empty array (no result)
@@ -43,19 +43,29 @@ def wq_write(name: str, key: Write):
         raise HTTPException(403)
 
 @app.get("/api/stack_pop/{name}")
-def wq_stack_pop(name: str, key: Key):
+def stack_pop(name: str, key: Key):
     return dir_pop(name, str(key.key), True)
 
 @app.get("/api/pop/{name}")
-def wq_pop(name: str, key: Key):
+def pop(name: str, key: Key):
     return dir_pop(name, str(key.key), False)
+
+@app.get("/api/length/{name}")
+def length(name: str):
+    if a.san_bool(name):
+        try:
+            return a.length_get(name)
+        except IndexError:
+            raise HTTPException(404,detail=f"{name} not found")
+    else:
+        raise HTTPException(400,detail="sanitise_name")
 
 class Create(BaseModel):
     write_secret: str | None = ""
     read_secret: str | None = ""
 
 @app.put("/api/manage/{name}")
-def wq_new(name: str, secrets: Create, status_code=201):
+def new(name: str, secrets: Create, status_code=201):
     res = a.queue_new(name,str(secrets.write_secret),str(secrets.read_secret))
     if res[1] == "invalid_name":
         raise HTTPException(status_code=400,detail="invalid name")
@@ -65,19 +75,31 @@ def wq_new(name: str, secrets: Create, status_code=201):
         return res[0] #delete_secret
     
 @app.delete("/api/manage/{name}",status_code=204)
-def wq_delete(name: str, key: Key):
+def delete(name: str, key: Key):
     res = a.queue_delete(name,key.key)
     if res != "":
         raise HTTPException(403,detail=res)
 
-class Keychange:
+class Keychange(BaseModel):
     key: str | None = ""
     target_content: str | None = ""
 
 @app.post("/api/change_write_key/{name}",status_code=204)
-def wq_write_key_change(name: str, keychange: Keychange):
+def write_key_change(name: str, keychange: Keychange):
     try:
         err = a.queue_change_keys(name,keychange.key,keychange.target_content,False)
+    except IndexError:
+        raise HTTPException(404,detail=f"{name} not found")
+    if err != "":
+        if "sanit" in err:
+            raise HTTPException(400,detail=err)
+        else:
+            raise HTTPException(403,detail=err)
+        
+@app.post("/api/change_read_key/{name}",status_code=204)
+def read_key_change(name: str, keychange: Keychange):
+    try:
+        err = a.queue_change_keys(name,keychange.key,keychange.target_content,True)
     except IndexError:
         raise HTTPException(404,detail=f"{name} not found")
     if err != "":
