@@ -1,6 +1,8 @@
 import sqlite3 as sq3
 import time
 import random, string
+def san_bool(str:str):
+    return (("'" not in str) and ('"' not in str) and (";" not in str) and ("*" not in str))
 with sq3.connect("queue.db") as database:
     PROTECTED_NAMES = ("queue", "info_queue", "info_event", "queue_manager")
     def queue_create_new(name="queue"):
@@ -10,7 +12,7 @@ with sq3.connect("queue.db") as database:
             content text,
             rel_pos float,
             timestamp integer)
-    ''')
+    ''') #unsafe, sanitise beforehand
 
     def DB_INSERT(name="queue"):
         return f"insert into {name} (ID, content, rel_pos, timestamp) values"
@@ -71,9 +73,9 @@ with sq3.connect("queue.db") as database:
 def length_update(name="queue"):
     with sq3.connect("queue.db") as database:
         c = database.cursor()
-        c.execute(f"select * from {name}")
+        c.execute("select * from ?",(name,))
         res = len(c.fetchall())
-        c.execute(f"update queue_manager set len = {res} where name = '{name}'")
+        c.execute("update queue_manager set len = ? where name = '?'",(res,name))
         database.commit()
         c.close()
     return res
@@ -81,7 +83,7 @@ def length_update(name="queue"):
 def length_get(name="queue"):
     with sq3.connect("queue.db") as database:
         c = database.cursor()
-        c.execute(f"select * from queue_manager where name = '{name}'")
+        c.execute("select * from queue_manager where name = '?'",(name,))
         res = c.fetchone()[1]
         database.commit() #idk if i need to do this for read-only queries, but better safe than sorry?
         c.close()
@@ -119,19 +121,28 @@ def queue_new(name,writePwd="", readPwd=""):
     global managerLen
     err = ""
     deletePwd = ''.join(random.choices(string.ascii_letters + string.digits,k=16))
-    with sq3.connect("queue.db") as database:
-        c = database.cursor()
-        c.execute(f"select * from queue_manager where name = '{name}'")
-        if (len(c.fetchmany(1)) == 0) and name != "queue_manager":
-            insertTuple = (managerLen,0,name,deletePwd,writePwd,readPwd,round(time.time()))
-            print(insertTuple)
-            c.execute(f"{MNG_INSERT} {insertTuple}")
-            c.execute(queue_create_new(name))
-            database.commit()
-            managerLen += 1
+    if ("'" not in name) and ('"' not in name) and (";" not in name) and ("*" not in name):
+        if san_bool(writePwd):
+            if san_bool(readPwd): #family reunion of if statements
+                with sq3.connect("queue.db") as database:
+                    c = database.cursor()
+                    c.execute(f"select * from queue_manager where name = '{name}'")
+                    if (len(c.fetchmany(1)) == 0) and name != "queue_manager":
+                            insertTuple = (managerLen,0,name,deletePwd,writePwd,readPwd,round(time.time()))
+                            print(insertTuple)
+                            c.execute(f"{MNG_INSERT} {insertTuple}")
+                            c.execute(queue_create_new(name))
+                            database.commit()
+                            managerLen += 1
+                    else:
+                        err = "invalid_name"
+                    c.close()
+            else:
+                err = "sanitise_readpwd"
         else:
-            err = "invalid_name"
-        c.close()
+            err = "sanitise_writepwd"
+    else:
+        err = "sanitise_name"
     if err == "":
         queue_write(name,"info_queue")
     return((deletePwd,err))
@@ -141,11 +152,11 @@ def queue_delete(name, deletePwd):
     if not name in PROTECTED_NAMES:
         with sq3.connect("queue.db") as database:
             c = database.cursor()
-            c.execute(f"select * from queue_manager where name = '{name}'")
+            c.execute("select * from queue_manager where name = '?'",(name,))
             targetDb = c.fetchmany(1)[0]
             if targetDb[3] == deletePwd:
-                c.execute(f"delete from queue_manager where name = '{name}' and delete_secret = '{deletePwd}'")
-                c.execute(f"drop table {name}")
+                c.execute("delete from queue_manager where name = '?' and delete_secret = '?'",(name,deletePwd))
+                c.execute("drop table ?",(name,))
             else:
                 err = "incorrect_secret"
             database.commit()
@@ -156,7 +167,7 @@ def queue_delete(name, deletePwd):
 def q_info(name):
     with sq3.connect("queue.db") as database:
         c = database.cursor()
-        c.execute(f"select * from queue_manager where name = '{name}'")
+        c.execute("select * from queue_manager where name = '?'",(name,))
         res = c.fetchmany(1)[0]
         database.commit()
         c.close()
