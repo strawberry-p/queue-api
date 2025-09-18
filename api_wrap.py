@@ -69,4 +69,20 @@ def wq_delete(name: str, key: Key):
     res = a.queue_delete(name,key.key)
     if res != "":
         raise HTTPException(403,detail=res)
+
+class Keychange:
+    key: str | None = ""
+    target_content: str | None = ""
+
+@app.post("/api/change_write_key/{name}",status_code=204)
+def wq_write_key_change(name: str, keychange: Keychange):
+    try:
+        err = a.queue_change_keys(name,keychange.key,keychange.target_content,False)
+    except IndexError:
+        raise HTTPException(404,detail=f"{name} not found")
+    if err != "":
+        if "sanit" in err:
+            raise HTTPException(400,detail=err)
+        else:
+            raise HTTPException(403,detail=err)
     

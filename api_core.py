@@ -75,7 +75,7 @@ with sq3.connect("queue.db") as database:
     length_update("info_events")
     length_update("queue")
     c.execute("select * from queue_manager")
-    #print(c.fetchall())
+    print(c.fetchall())
     database.commit()
     c.close()
 
@@ -190,6 +190,7 @@ def queue_delete(name, deletePwd):
     else:
         return "protected_name"
 def q_info(name):
+    res = []
     with sq3.connect("queue.db") as database:
         c = database.cursor()
         c.execute("select * from queue_manager where name = ?",(str(name),))
@@ -197,3 +198,28 @@ def q_info(name):
         database.commit()
         c.close()
     return res
+
+def queue_change_keys(name,deletePwd,targetContent,writeOrRead=False):
+    err = ""
+    if writeOrRead:
+        tarPos = 4
+        tarName = "write_secret"
+    else:
+        tarPos = 5
+        tarName = "read_secret"
+    if not (san_bool(deletePwd)):
+        err = "sanitise_deletepwd"
+    elif not (san_bool(targetContent)):
+        err = "sanitise_targetcontent"
+    elif not (san_bool(name)):
+        err = "sanitise_name"
+    else:
+        targetDb = q_info(name)
+        with sq3.connect("queue.db") as database:
+            c = database.cursor()
+            if targetDb[3] == deletePwd:
+                c.execute(f"update queue_manager set {tarName} = ? where name = ? and delete_secret = ?",(str(targetContent),str(name),str(deletePwd)))
+                database.commit()
+            else:
+                err = "incorrect_secret"
+    return err
