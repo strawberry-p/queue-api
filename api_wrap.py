@@ -2,7 +2,9 @@ from fastapi import FastAPI, HTTPException, Path
 from typing import Annotated
 import api_core as a
 from pydantic import BaseModel
-app = FastAPI()
+with open("description.md") as file:
+    description = file.read()
+app = FastAPI(title="Queue/stack API",summary="Queue/stack data structures API with remote writing and reading",description=description)
 WRITE_PROTECT = ("info_queue", "info_event")
 NAMETYPE = Annotated[str,Path(description="Name of the target queue table",example="queue")]
 class Write(BaseModel):
