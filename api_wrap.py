@@ -49,14 +49,14 @@ def write(name: NAMETYPE, key: Write):
 @app.get("/api/stack_pop/{name}",
          summary="Retrieve and pop the last item from the given queue/stack table",
          response_description="Content of the retrieved item in plaintext. \"\" means the queue is empty.")
-def stack_pop(name: NAMETYPE, key: Key):
-    return dir_pop(name, str(key.key), True)
+def stack_pop(name: NAMETYPE, key: str = ""):
+    return dir_pop(name, key, True)
 
 @app.get("/api/pop/{name}",
          summary="Retrieve and pop the first item from the given queue table",
          response_description="Content of the retrieved item in plaintext. \"\" means the queue is empty.")
-def pop(name: NAMETYPE, key: Key):
-    return dir_pop(name, str(key.key), False)
+def pop(name: NAMETYPE, key: str = ""):
+    return dir_pop(name, key, False)
 
 @app.get("/api/length/{name}",
          summary="Returns the length of the given queue table",
@@ -89,8 +89,8 @@ def new(name: NAMETYPE, secrets: CreateQueue):
     
 @app.delete("/api/manage/{name}",status_code=204,
             summary="Delete the given queue you have created using its corresponding delete key")
-def delete(name: NAMETYPE, key: Key):
-    res = a.queue_delete(name,key.key)
+def delete(name: NAMETYPE, key: str):
+    res = a.queue_delete(name,key)
     if res != "":
         raise HTTPException(403,detail=res)
 

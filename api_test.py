@@ -11,9 +11,9 @@ def p(content: str,name="queue",key=""):
 
 def g(name="queue",key="",stack=False):
     if stack:
-        res = r.get(f"{ADDR}/stack_pop/{name}",json={"key":key})
+        res = r.get(f"{ADDR}/stack_pop/{name}",params={"key":key})
     else:
-        res = r.get(f"{ADDR}/pop/{name}",json={"key":key})
+        res = r.get(f"{ADDR}/pop/{name}",params={"key":key})
     print(f"status {res.status_code}")
     if res.status_code > 299:
         print(res.content)
@@ -40,7 +40,7 @@ def new_queue(name,wk="",rk=""):
     else:
         return res.json()
 def delete_queue(name, dk):
-    res = r.delete(f"{ADDR}/manage/{name}",json={"key":dk})
+    res = r.delete(f"{ADDR}/manage/{name}",params={"key":dk})
     errcode = res.status_code
     print(f"status {errcode}")
     if errcode > 299:

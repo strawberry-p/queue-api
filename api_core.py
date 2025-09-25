@@ -201,7 +201,7 @@ def q_info(name):
 
 def queue_change_keys(name,deletePwd,targetContent,writeOrRead=False):
     err = ""
-    if writeOrRead:
+    if not writeOrRead:
         tarPos = 4
         tarName = "write_secret"
     else:
